@@ -1,0 +1,213 @@
+{% extends 'website/base.html' %}
+
+
+{% block style_script %}
+
+    <style>
+
+        table {
+          border-collapse: separate;
+          border-spacing: 50px 0;
+        }
+
+        td {
+          padding: 10px 0;
+        }
+        
+        #map-canvas{
+            margin-top: 3px;
+            border: 1px solid Grey;
+            width:975px;
+            height:500px;
+        }
+
+        .w3-btn {
+        margin-bottom:10px;
+            font-size: 24px;
+        }
+
+    </style>
+ 
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    
+    
+    <title>Weather monitoring</title>
+    
+    {% load staticfiles %}
+    <link href="https://fonts.googleapis.com/css?family=Satisfy" rel="stylesheet">
+    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCyB6K1CFUQ1RwVJ-nyXxd6W0rfiIBe12Q" type="text/javascript"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
+
+
+
+    <script>
+
+        var lat = 13.554653400463117;
+        var lng = 80.02738224029542;
+        var map, marker, points = [];
+
+        
+        function yourFunction(lat, lng)
+        {
+
+            var lat_matched, lng_matched, flag = 0;
+
+            // Precison of lat, lng: 4 decimal places
+            var int_lat = Math.floor( lat*10000 );
+            var int_lng = Math.floor( lng*10000 );
+
+
+            {% for point in points %}
+
+                var l1 = Math.floor( {{ point.latitude }}*10000 );
+                var l2 = Math.floor( {{ point.longitude }}*10000 );
+
+                if( Math.abs( l1 - int_lat) <= 10 )
+                {
+                    if( Math.abs( l2 - int_lng) <= 10 )
+                    {
+
+                        lat_matched = {{point.latitude}};
+                        lng_matched = {{point.longitude}};
+                        flag = 1;
+                        window.location.href = 'redirect/'+lat_matched+'/'+lng_matched+'/'
+                    }
+                }
+
+
+            {% endfor %}
+
+            if(flag == 0)
+                alert("Select among circles on the Map!!");
+                
+        }
+
+
+        function left_panel(lat, lng)
+        {
+
+            var temperature=" -", humidity=" -", co2=" -", smoke=" -";
+            var l1 = Math.floor( lat*10000 );
+            var ln1 = Math.floor( lng*10000 );
+
+            {% for point in points %}
+
+                var l2 = Math.floor( {{ point.latitude }}*10000 );
+                var ln2 = Math.floor( {{ point.longitude }}*10000 );
+
+                if( Math.abs(l1 - l2) <= 10 )
+                {
+                    if( Math.abs(ln1 - ln2) <= 10 )
+                    {
+                        temperature = {{ point.temperature }};
+                        humidity = {{ point.humidity }};
+                        co2 = {{ point.co2 }};
+                        smoke = {{ point.smoke }};
+                    }
+                }
+
+            {% endfor %}
+
+            // Changing data on left panel
+            var html = "<h3 class='centerText'> Present </h3><br>";
+            html += "<h3 style=margin-left:25px;>Temperature - " + temperature + "</h3><br>";
+            html += "<h3 style=margin-left:25px;>Humidity - " + humidity + "</h3><br>";
+            html += "<h3 style=margin-left:25px;>Co2 - " + co2 + "</h3><br>";
+            html += "<h3 style=margin-left:25px;>Smoke - " + smoke + "</h3><br><br>";
+
+            html += "<a href='#' onclick='yourFunction(lat, lng)'><button style=margin-left:25px; class='w3-btn w3-white w3-border w3-border-blue w3-round-large'>Get Past Data</button></a>";
+
+            document.getElementById("left-panel").innerHTML = html;
+
+        }
+
+
+
+        function init(){
+
+
+            left_panel(13.554653400463117, 80.02738224029542);
+
+            
+            //map
+            map = new google.maps.Map(document.getElementById('map-canvas'),{
+                center:{
+                    lat: 13.554653400463117,
+                    lng: 80.02738224029542
+                },
+                zoom: 13
+            });
+            
+            //marker
+            marker = new google.maps.Marker({
+                position: {
+                    lat: 13.554653400463117,
+                    lng: 80.02738224029542
+                },
+
+                map: map,
+                draggable: true,
+            });    
+
+
+            {% for point in points %}
+
+                
+                //console.log({{ point.latitude }});
+                //console.log({{ point.longitude }});
+
+
+                // Drawing circles.
+                var circle = new google.maps.Circle({
+                    
+                    map: map,                    
+                    center: new google.maps.LatLng( {{point.latitude}}, {{point.longitude}} ),
+                    fillColor: "#00FF00",
+                    strokeColor: "red",
+                    radius: 100
+                });
+
+             {% endfor %}
+
+
+            // Event when marker is drraged.
+            google.maps.event.addListener(marker, 'dragend', function(){
+                
+                lat = marker.getPosition().lat();
+                lng = marker.getPosition().lng();
+
+                left_panel(lat, lng);
+                
+            });                
+        }
+        
+        window.onload = init;
+
+    </script>
+
+{% endblock %}
+
+
+
+{% block middle %}
+
+    <div class="container-fluid">
+        <div class = "row">
+
+            <div class = "col-md-3" >
+                <div class="colHeight" id="left-panel">
+                </div>
+            </div>
+            
+            <div class = "col-md-9">
+                <div class="colHeight">
+                    <center><div id="map-canvas"></div><center>
+                </div>
+            </div>
+
+        </div>
+    </div>
+                
+    
+{% endblock %}
